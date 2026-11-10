@@ -8,6 +8,12 @@ describe("health", () => {
     expect(res.body.status).toBe("ok");
   });
 
+  it("GET /api/ready reports that the database is connected", async () => {
+    const res = await api().get("/api/ready");
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ status: "ready", db: "connected" });
+  });
+
   it("unknown API routes return a JSON 404", async () => {
     const res = await api().get("/api/does-not-exist");
     expect(res.status).toBe(404);

@@ -2,6 +2,7 @@ import cors from "cors";
 import express, { type NextFunction, type Request, type Response } from "express";
 import { authRouter } from "./auth.js";
 import { categoriesRouter, itemsRouter, loansRouter } from "./inventory.js";
+import { getPrisma } from "./prisma.js";
 
 export const app = express();
 
@@ -15,6 +16,17 @@ app.use(express.json({ limit: "100kb" }));
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
+});
+
+// Readiness: 503 when the database cannot be reached. The deploy smoke test
+// calls this after every release.
+app.get("/api/ready", async (_req, res) => {
+  try {
+    await getPrisma().$queryRaw`SELECT 1`;
+    res.json({ status: "ready", db: "connected" });
+  } catch {
+    res.status(503).json({ status: "not_ready", db: "disconnected" });
+  }
 });
 
 app.use("/api/auth", authRouter);
