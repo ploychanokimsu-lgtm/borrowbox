@@ -7,9 +7,23 @@ const prisma = new PrismaClient();
 
 const CATEGORIES = ["Audio", "Camera", "Computer", "Lab Equipment", "Projector"];
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "LocalCustodian1!";
-const DEMO_PASSWORD = process.env.DEMO_USER_PASSWORD ?? "LocalDemo1!";
-const SEED_DEMO = (process.env.SEED_DEMO_DATA ?? "true") === "true";
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+
+// Local defaults exist only for development. In production every password
+// must come from the environment (Cloud Run reads them from Secret Manager).
+function setting(name: string, localDefault: string): string {
+  const value = process.env[name];
+  if (value) return value;
+  if (IS_PRODUCTION) {
+    throw new Error(`${name} must be set when NODE_ENV=production.`);
+  }
+  return localDefault;
+}
+
+// Demo data: on by default locally, off by default in production.
+const SEED_DEMO = (process.env.SEED_DEMO_DATA ?? (IS_PRODUCTION ? "false" : "true")) === "true";
+const ADMIN_PASSWORD = setting("ADMIN_PASSWORD", "LocalCustodian1!");
+const DEMO_PASSWORD = SEED_DEMO ? setting("DEMO_USER_PASSWORD", "LocalDemo1!") : "";
 
 async function ensureUser(email: string, name: string, role: UserRole, password: string) {
   const existing = await prisma.user.findUnique({ where: { email } });
