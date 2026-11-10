@@ -327,6 +327,25 @@ function CustodianView() {
   );
 }
 
+// ---------------------------------------------------------------- Footer
+/** Shows which commit is running, so testers can report the exact release. */
+export function ReleaseFooter() {
+  const [commit, setCommit] = useState<string | null>(null);
+  useEffect(() => {
+    api.version().then((v) => setCommit(v.commit)).catch(() => setCommit(null));
+  }, []);
+  return (
+    <footer className="footer">
+      BorrowBox Sprint 1
+      {commit && (
+        <>
+          {" "}&middot; Release <code title={commit}>{/^[0-9a-f]{40}$/.test(commit) ? commit.slice(0, 7) : commit}</code>
+        </>
+      )}
+    </footer>
+  );
+}
+
 // ---------------------------------------------------------------- App
 export function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -364,6 +383,7 @@ export function App() {
           <BorrowerView />
         )}
       </main>
+      <ReleaseFooter />
     </div>
   );
 }
