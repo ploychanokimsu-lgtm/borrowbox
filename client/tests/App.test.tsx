@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { App } from "../src/App";
+import { App, ReleaseFooter } from "../src/App";
 
 type Route = (url: string, init?: RequestInit) => { status: number; body: unknown } | undefined;
 
@@ -89,5 +89,16 @@ describe("App", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "Approve" })).toBeInTheDocument());
     expect(screen.getByRole("button", { name: "Reject" })).toBeInTheDocument();
     expect(screen.getByText("Ploy")).toBeInTheDocument();
+  });
+
+  it("shows the short commit of the running release in the footer", async () => {
+    mockFetch((url) =>
+      url.endsWith("/api/version")
+        ? { status: 200, body: { commit: "e4f5a6b0123456789abcdef0123456789abcdef0" } }
+        : undefined
+    );
+    render(<ReleaseFooter />);
+    const code = await screen.findByText("e4f5a6b");
+    expect(code).toHaveAttribute("title", "e4f5a6b0123456789abcdef0123456789abcdef0");
   });
 });

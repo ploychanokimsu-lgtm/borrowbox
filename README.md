@@ -56,3 +56,13 @@ npm run dev
 cd server && npm test   # needs DATABASE_URL pointing at a migrated database
 cd client && npm test
 ```
+
+## Docker and deployment (Lab 5)
+
+```bash
+cp .env.example .env      # replace every change-me value
+docker compose up --build # http://localhost:3000
+```
+
+Cloud Run deployment, environment variables, GCP resources and the release
+procedure: [docs/labs/lab-05/deployment.md](docs/labs/lab-05/deployment.md).

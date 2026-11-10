@@ -1,0 +1,15 @@
+**/node_modules
+**/dist
+**/build
+**/coverage
+**/.env
+**/.env.*
+!**/.env.example
+*.log
+.git
+.github
+docs
+test-results
+playwright-report
+gha-creds-*.json
+*-key.json

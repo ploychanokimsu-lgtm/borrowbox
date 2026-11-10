@@ -63,6 +63,7 @@ const post = <T>(path: string, data?: unknown) =>
 
 export const api = {
   me: () => call<User>("/api/auth/me"),
+  version: () => call<{ commit: string }>("/api/version"),
   login: (email: string, password: string) =>
     post<{ user: User }>("/api/auth/login", { email, password }),
   logout: () => post<{ ok: true }>("/api/auth/logout"),
