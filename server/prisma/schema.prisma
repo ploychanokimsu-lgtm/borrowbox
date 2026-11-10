@@ -1,0 +1,106 @@
+// BorrowBox - Inventory and Borrowing System (CPE 334 Group Project, theme 2)
+// Sprint 1 roles: Borrower and Custodian.
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  BORROWER
+  CUSTODIAN
+}
+
+enum LoanStatus {
+  REQUESTED
+  BORROWED
+  RETURNED
+  REJECTED
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  role         UserRole @default(BORROWER)
+  passwordHash String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sessions      Session[]
+  loans         Loan[]    @relation("LoanBorrower")
+  decidedLoans  Loan[]    @relation("LoanDecidedBy")
+  itemsCreated  Item[]
+}
+
+// Sessions live in the database so a restart or a new Cloud Run instance
+// does not sign users out.
+model Session {
+  id        String   @id @default(cuid())
+  userId    Int
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Category {
+  id       Int     @id @default(autoincrement())
+  name     String  @unique
+  isActive Boolean @default(true)
+
+  items Item[]
+}
+
+model Item {
+  id            Int      @id @default(autoincrement())
+  assetCode     String   @unique @db.VarChar(32)
+  name          String   @db.VarChar(120)
+  description   String?  @db.VarChar(500)
+  categoryId    Int
+  totalQuantity Int
+  isActive      Boolean  @default(true)
+  createdById   Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  category  Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  createdBy User?    @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  loans     Loan[]
+
+  @@index([categoryId])
+}
+
+model Loan {
+  id          Int        @id @default(autoincrement())
+  itemId      Int
+  borrowerId  Int
+  quantity    Int
+  purpose     String     @db.VarChar(300)
+  dueDate     DateTime
+  status      LoanStatus @default(REQUESTED)
+  decidedById Int?
+  decisionNote String?   @db.VarChar(300)
+  requestedAt DateTime   @default(now())
+  decidedAt   DateTime?
+  returnedAt  DateTime?
+  updatedAt   DateTime   @updatedAt
+
+  item      Item  @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  borrower  User  @relation("LoanBorrower", fields: [borrowerId], references: [id], onDelete: Restrict)
+  decidedBy User? @relation("LoanDecidedBy", fields: [decidedById], references: [id], onDelete: Restrict)
+
+  @@index([borrowerId, requestedAt])
+  @@index([itemId, status])
+  @@index([status, requestedAt])
+}
