@@ -1,0 +1,57 @@
+# Local run of the production image with PostgreSQL.
+#   cp .env.example .env      # then replace every change-me value
+#   docker compose up --build
+#   open http://localhost:3000
+# Values come from the root .env file (never committed). Compose stops with an
+# error if a required value is missing, so no password lives in this file.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-borrowbox}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-borrowbox}
+    volumes:
+      # Named volume: data survives `docker compose down` and `up` again.
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-borrowbox} -d ${POSTGRES_DB:-borrowbox}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # One-off job: apply migrations, then the idempotent seed (same as the
+  # borrowbox-migrate Cloud Run job).
+  migrate:
+    build: .
+    image: borrowbox:local
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-borrowbox}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-borrowbox}?schema=public
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
+      DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:-}
+    entrypoint: ["sh", "-c", "npx prisma migrate deploy && npm run prisma:seed"]
+
+  app:
+    build: .
+    image: borrowbox:local
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-borrowbox}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-borrowbox}?schema=public
+      PORT: 3000
+    ports:
+      - "${APP_PORT:-3000}:3000"
+
+volumes:
+  postgres_data:
