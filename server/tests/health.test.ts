@@ -14,6 +14,19 @@ describe("health", () => {
     expect(res.body).toEqual({ status: "ready", db: "connected" });
   });
 
+  it("GET /api/version reports the commit from APP_COMMIT", async () => {
+    const before = process.env.APP_COMMIT;
+    process.env.APP_COMMIT = "0123456789abcdef0123456789abcdef01234567";
+    try {
+      const res = await api().get("/api/version");
+      expect(res.status).toBe(200);
+      expect(res.body.commit).toBe("0123456789abcdef0123456789abcdef01234567");
+    } finally {
+      if (before === undefined) delete process.env.APP_COMMIT;
+      else process.env.APP_COMMIT = before;
+    }
+  });
+
   it("unknown API routes return a JSON 404", async () => {
     const res = await api().get("/api/does-not-exist");
     expect(res.status).toBe(404);

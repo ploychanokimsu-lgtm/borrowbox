@@ -21,6 +21,11 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+// Which commit is running (APP_COMMIT is set in the image by deploy.yml).
+app.get("/api/version", (_req, res) => {
+  res.json({ commit: process.env.APP_COMMIT || "local" });
+});
+
 // Readiness: 503 when the database cannot be reached. The deploy smoke test
 // calls this after every release.
 app.get("/api/ready", async (_req, res) => {

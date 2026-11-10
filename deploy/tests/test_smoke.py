@@ -27,6 +27,7 @@ class SmokeTests(unittest.TestCase):
             '/api/auth/login': b'{"token":"test-session"}',
             '/api/auth/me': b'{"id":1}',
             '/api/auth/logout': b'{}',
+            '/api/version': b'{"commit":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}',
         }[path]
 
     @patch.dict('os.environ', {}, clear=True)
@@ -34,6 +35,18 @@ class SmokeTests(unittest.TestCase):
         with patch.object(smoke, 'request', side_effect=self.response) as req:
             smoke.check('https://demo.test')
             self.assertEqual(req.call_count, 4)
+
+    @patch.dict('os.environ', {'EXPECTED_COMMIT': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'}, clear=True)
+    def test_running_commit_matches_expected(self):
+        with patch.object(smoke, 'request', side_effect=self.response) as req:
+            smoke.check('https://demo.test')
+            self.assertEqual(req.call_args.args[1], '/api/version')
+
+    @patch.dict('os.environ', {'EXPECTED_COMMIT': 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'}, clear=True)
+    def test_wrong_running_commit_fails(self):
+        with patch.object(smoke, 'request', side_effect=self.response):
+            with self.assertRaisesRegex(RuntimeError, '/api/version'):
+                smoke.check('https://demo.test')
 
     @patch.dict('os.environ', {}, clear=True)
     def test_db_not_ready_fails_even_when_http_responds(self):

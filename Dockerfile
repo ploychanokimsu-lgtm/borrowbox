@@ -48,6 +48,10 @@ RUN chmod +x ./docker-entrypoint.sh
 
 ENV NODE_ENV=production
 ENV TZ=Asia/Bangkok
+# Commit this image was built from (deploy.yml passes the full SHA). Shown by
+# GET /api/version and in the page footer so anyone can see what is running.
+ARG GIT_SHA=local
+ENV APP_COMMIT=${GIT_SHA}
 # Must match `--port 3000` in deploy/deploy.sh.
 ENV PORT=3000
 EXPOSE 3000

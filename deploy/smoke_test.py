@@ -71,6 +71,15 @@ def check(base):
                 time.sleep(3)
         print('PASS ' + path)
 
+    # --- Running commit (R-08): deploy.yml sets EXPECTED_COMMIT -------------
+    expected = os.getenv('EXPECTED_COMMIT')
+    if expected:
+        running = json.loads(request(base, '/api/version')).get('commit')
+        if running != expected:
+            raise RuntimeError('Smoke check failed: /api/version reports ' + str(running)
+                               + ', expected ' + expected)
+        print('PASS /api/version commit ' + expected)
+
     # --- Optional login check (only when both credentials are provided) -------
     email, password = os.getenv('SMOKE_EMAIL'), os.getenv('SMOKE_PASSWORD')
     if bool(email) != bool(password):
