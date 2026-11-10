@@ -51,7 +51,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-borrowbox}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-borrowbox}?schema=public
       PORT: 3000
     ports:
-      - "3000:3000"
+      - "${APP_PORT:-3000}:3000"
 
 volumes:
   postgres_data:
